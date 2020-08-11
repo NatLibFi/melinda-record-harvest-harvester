@@ -50,11 +50,11 @@ export default async ({harvestPeriod, url, metadataPrefix, set, logLevel, stateI
   }
 
   if (status === statuses.done) {
-    if (isHarvestDue()) {
+    /*if (isHarvestDue()) {
       logger.log('info', 'Harvest is due');
       await writeState({status: statuses.pending});
       return harvest();
-    }
+    }*/
 
     logger.info('Nothing to do. Exiting.');
     return;
