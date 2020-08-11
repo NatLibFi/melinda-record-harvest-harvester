@@ -4,3 +4,7 @@ coverage
 dist
 .nyc_output
 .env
+README.md
+Dockerfile
+License.txt
+test-fixtures
