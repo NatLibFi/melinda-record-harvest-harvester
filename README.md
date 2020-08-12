@@ -1,4 +1,4 @@
-# Record harvester microservice for Melinda
+# Melinda record harvester microservice
 
 ## License and copyright
 

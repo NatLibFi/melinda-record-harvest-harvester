@@ -3,7 +3,7 @@
 *
 * @licstart  The following is the entire license notice for the JavaScript code in this file.
 *
-* Record harvester microservice for Melinda
+* Melinda record harvester microservice
 *
 * Copyright (C) 2020 University Of Helsinki (The National Library Of Finland)
 *
@@ -27,29 +27,37 @@
 *
 */
 
-import moment from 'moment';
+//import moment from 'moment';
 import {createLogger} from '@natlibfi/melinda-backend-commons';
 import createStateInterface, {statuses} from '@natlibfi/melinda-record-harvest-commons';
 import {MARCXML} from '@natlibfi/marc-record-serializers';
-import createOaiPmhClient from '@natlibfi/oai-pmh-client';
+import createOaiPmhClient, {OaiPmhError} from '@natlibfi/oai-pmh-client';
 
-export default async ({harvestPeriod, url, metadataPrefix, set, logLevel, stateInterfaceOptions}) => {
+//export default async ({harvestPeriod, url, metadataPrefix, set, logLevel, stateInterfaceOptions}) => {
+export default async ({url, metadataPrefix, set, logLevel, stateInterfaceOptions}) => {
   const oaiPmhClient = createOaiPmhClient({url, metadataPrefix, set, retrieveAll: false, filterDeleted: true});
   const logger = createLogger(logLevel);
   const {readState, writeState, handleQueues} = createStateInterface(stateInterfaceOptions);
 
   logger.log('info', `Starting melinda-record-harvest-harvester`);
 
-  const {status, resumptionToken, timestamp} = await readState();
+  //  const {status, resumptionToken, timestamp} = await readState();
+  const {status, error, resumptionToken} = await readState();
+
+  if (status === statuses.harvestError) {
+    logger.log('error', `Cannot proceed. Last run resulted in an error: ${error}`);
+    return;
+  }
 
   await handleQueues();
 
-  if (status === statuses.pending) {
+  if (status === statuses.harvestPending) {
     logger.log('info', resumptionToken ? `Resuming harvest. Cursor of last response: ${resumptionToken.cursor}` : 'Starting harvest');
     return harvest(resumptionToken);
   }
 
-  if (status === statuses.done) {
+  if (status === statuses.harvestDone) {
+
     /*if (isHarvestDue()) {
       logger.log('info', 'Harvest is due');
       await writeState({status: statuses.pending});
@@ -62,25 +70,34 @@ export default async ({harvestPeriod, url, metadataPrefix, set, logLevel, stateI
 
   logger.info('Nothing to do. Exiting.');
 
-  function isHarvestDue() {
+  /*function isHarvestDue() {
     const now = moment();
     const dumpAge = now.diff(timestamp);
     return dumpAge > harvestPeriod;
-  }
+  }*/
 
   async function harvest(resumptionToken) {
-    const {records, newToken} = await fetchRecords();
+    try {
+      const {records, newToken} = await fetchRecords();
 
-    if (newToken) {
-      await writeState({resumptionToken: formatToken()}, records);
-      logger.log('info', 'Harvesting more records');
-      return harvest(newToken);
-    }
+      if (newToken) {
+        await writeState({
+          status: statuses.harvestPending,
+          resumptionToken: {token: newToken.token, cursor: newToken.cursor}
+        }, records);
+        logger.log('info', 'Harvesting more records');
+        return harvest(newToken);
+      }
 
-    await writeState({status: statuses.done}, records);
+      await writeState({status: statuses.harvestDone}, records);
+    } catch (err) {
+      if (err instanceof OaiPmhError) {
+        const error = `OAI-PMH error: ${err.code}`;
+        logger.log('error', `Cannot proceed because of an unexpected error: ${error}`);
+        return writeState({status: statuses.harvestError, error});
+      }
 
-    function formatToken() {
-      return {token: newToken.token, cursor: newToken.cursor};
+      throw err;
     }
 
     function fetchRecords() {
@@ -95,6 +112,7 @@ export default async ({harvestPeriod, url, metadataPrefix, set, logLevel, stateI
               const records = await Promise.all(promises);
               resolve({records, newToken});
             } catch (err) {
+              logger.error(`Unexpected error (${newToken ? `Token ${newToken}` : 'No token'})`);
               reject(err);
             }
           });

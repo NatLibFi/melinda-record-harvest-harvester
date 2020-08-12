@@ -2,7 +2,7 @@
 *
 * @licstart  The following is the entire license notice for the JavaScript code in this file.
 *
-* Record harvester microservice for Melinda
+* Melinda record harvester microservice
 *
 * Copyright (C) 2020 University Of Helsinki (The National Library Of Finland)
 *
@@ -40,12 +40,12 @@ async function run() {
     process.on('SIGTERM', handleSignal);
     process.on('SIGINT', handleSignal);
 
-    process.on('uncaughtException', ({stack}) => {
-      handleTermination({code: 1, message: stack});
+    process.on('uncaughtException', err => {
+      handleTermination({code: 1, message: err.stack || err});
     });
 
-    process.on('unhandledRejection', ({stack}) => {
-      handleTermination({code: 1, message: stack});
+    process.on('unhandledRejection', err => {
+      handleTermination({code: 1, message: err.stack || err});
     });
 
     function handleSignal(signal) {

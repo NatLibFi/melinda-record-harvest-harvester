@@ -2,7 +2,7 @@
 *
 * @licstart  The following is the entire license notice for the JavaScript code in this file.
 *
-* Record harvester microservice for Melinda
+* Melinda record harvester microservice
 *
 * Copyright (C) 2020 University Of Helsinki (The National Library Of Finland)
 *
