@@ -31,6 +31,7 @@
 import {createLogger} from '@natlibfi/melinda-backend-commons';
 import createStateInterface, {statuses} from '@natlibfi/melinda-record-harvest-commons';
 import {MARCXML} from '@natlibfi/marc-record-serializers';
+import MarcRecord, {MarcRecordError} from '@natlibfi/marc-record';
 import createOaiPmhClient, {OaiPmhError} from '@natlibfi/oai-pmh-client';
 
 //export default async ({harvestPeriod, url, metadataPrefix, set, logLevel, stateInterfaceOptions}) => {
@@ -38,6 +39,9 @@ export default async ({url, metadataPrefix, set, logLevel, stateInterfaceOptions
   const oaiPmhClient = createOaiPmhClient({url, metadataPrefix, set, retrieveAll: false, filterDeleted: true});
   const logger = createLogger(logLevel);
   const {readState, writeState, handleQueues} = createStateInterface(stateInterfaceOptions);
+
+  // Aleph generates subfields with empty values
+  MarcRecord.setValidationOptions({subfieldValues: false});
 
   logger.log('info', `Starting melinda-record-harvest-harvester`);
 
@@ -106,10 +110,27 @@ export default async ({url, metadataPrefix, set, logLevel, stateInterfaceOptions
 
         oaiPmhClient.listRecords({resumptionToken})
           .on('error', reject)
-          .on('record', ({metadata}) => promises.push(MARCXML.from(metadata))) // eslint-disable-line functional/immutable-data
+          .on('record', ({identifier, metadata}) => {
+            promises.push(transform()); // eslint-disable-line functional/immutable-data
+
+            function transform() {
+              try {
+                return MARCXML.from(metadata);
+              } catch (err) {
+                if (err instanceof MarcRecordError) {
+                  logger.log('warn', `Skipping record ${identifier} because parsing failed: ${JSON.stringify(err.validationResults)}`);
+                  return;
+                }
+
+                throw err;
+              }
+            }
+          })
           .on('end', async newToken => {
             try {
-              const records = await Promise.all(promises);
+              const values = await Promise.all(promises);
+              // Remove undefined values caused by failing transformations
+              const records = values.filter(v => v);
               resolve({records, newToken});
             } catch (err) {
               logger.error(`Unexpected error (${newToken ? `Token ${newToken}` : 'No token'})`);
