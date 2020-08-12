@@ -31,7 +31,7 @@
 import {createLogger} from '@natlibfi/melinda-backend-commons';
 import createStateInterface, {statuses} from '@natlibfi/melinda-record-harvest-commons';
 import {MARCXML} from '@natlibfi/marc-record-serializers';
-import MarcRecord, {MarcRecordError} from '@natlibfi/marc-record';
+import {MarcRecord, MarcRecordError} from '@natlibfi/marc-record';
 import createOaiPmhClient, {OaiPmhError} from '@natlibfi/oai-pmh-client';
 
 //export default async ({harvestPeriod, url, metadataPrefix, set, logLevel, stateInterfaceOptions}) => {
