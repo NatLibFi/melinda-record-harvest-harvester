@@ -81,11 +81,12 @@ export default async ({url, metadataPrefix, set, logLevel, stateInterfaceOptions
       const {records, newToken} = await fetchRecords();
 
       if (newToken) {
-        await writeState({
+        const totalMessageCount = await writeState({
           status: statuses.harvestPending,
           resumptionToken: {token: newToken.token, cursor: newToken.cursor}
         }, records);
-        logger.log('info', 'Harvesting more records');
+
+        logger.log('info', records.length > 0 ? `Sent ${records.length} records to queue. Total length now ${totalMessageCount}. Harvesting more records` : 'Harvesting more records');
         return harvest(newToken);
       }
 
