@@ -31,7 +31,6 @@
 import {createLogger} from '@natlibfi/melinda-backend-commons';
 import createStateInterface, {statuses} from '@natlibfi/melinda-record-harvest-commons';
 import {MARCXML} from '@natlibfi/marc-record-serializers';
-import {MarcRecord} from '@natlibfi/marc-record';
 import createOaiPmhClient, {OaiPmhError} from '@natlibfi/oai-pmh-client';
 
 //export default async ({harvestPeriod, url, metadataPrefix, set, logLevel, stateInterfaceOptions}) => {
@@ -39,9 +38,6 @@ export default async ({url, metadataPrefix, set, logLevel, stateInterfaceOptions
   const oaiPmhClient = createOaiPmhClient({url, metadataPrefix, set, retrieveAll: false, filterDeleted: true});
   const logger = createLogger(logLevel);
   const {readState, writeState, handleQueues} = createStateInterface(stateInterfaceOptions);
-
-  // Disable validation because we just to want harvest everything and not comment on validity
-  MarcRecord.setValidationOptions({subfieldValues: false, fields: false, subfields: false});
 
   logger.log('info', `Starting melinda-record-harvest-harvester`);
 
@@ -113,13 +109,14 @@ export default async ({url, metadataPrefix, set, logLevel, stateInterfaceOptions
           .on('record', ({identifier, metadata}) => {
             promises.push(transform()); // eslint-disable-line functional/immutable-data
 
-            function transform() {
+            async function transform() {
               try {
-                return MARCXML.from(metadata);
+                // Disable validation because we just to want harvest everything and not comment on validity
+                const record = await MARCXML.from(metadata, {subfieldValues: false, fields: false, subfields: false});
+                return record;
               } catch (err) {
                 // Doesn't work
                 logger.log('warn', `Skipping record ${identifier} because parsing failed: ${JSON.stringify(err)}`);
-
               }
             }
           })
