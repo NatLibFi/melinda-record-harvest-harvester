@@ -38,14 +38,12 @@ export const set = readEnvironmentVariable('SET', {defaultValue: '', format: v =
 export const logLevel = readEnvironmentVariable('LOG_LEVEL', {defaultValue: 'info'});
 
 export const stateInterfaceOptions = {
-  mongoUri: readEnvironmentVariable('MONGO_URI', {defaultValue: 'mongodb://localhost:27017/db'}),
-  amqpUri: readEnvironmentVariable('AMQP_URI', {defaultValue: 'amqp://localhost:5672'})
+  db: {
+    host: readEnvironmentVariable('DATABASE_HOST', {defaultValue: 'localhost'}),
+    port: readEnvironmentVariable('DATABASE_PORT', {defaultValue: 3306, format: v => Number(v)}),
+    connectionLimit: readEnvironmentVariable('DATABASE_CONNECTION_LIMIT', {defaultValue: 5, format: v => Number(v)}),
+    database: readEnvironmentVariable('DATABASE_NAME'),
+    username: readEnvironmentVariable('DATABASE_USERNAME'),
+    password: readEnvironmentVariable('DATABASE_PASSWORD')
+  }
 };
-
-/*
-export const dumpRecordsOptions = {
-  logLevel: logLevelArg,
-  dumpDirectory: readEnvironmentVariable('DUMP_DIRECTORY', {defaultValue: 'dump'}),
-  // 10 megabytes
-  maxFileSize: readEnvironmentVariable('MAX_FILE_SIZE', {defaultValue: 100000000, format: v => Number(v)})
-};*/

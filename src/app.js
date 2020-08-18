@@ -27,7 +27,6 @@
 *
 */
 
-//import moment from 'moment';
 import {createLogger} from '@natlibfi/melinda-backend-commons';
 import createStateInterface, {statuses} from '@natlibfi/melinda-record-harvest-commons';
 import {MARCXML} from '@natlibfi/marc-record-serializers';
@@ -37,7 +36,7 @@ import createOaiPmhClient, {OaiPmhError} from '@natlibfi/oai-pmh-client';
 export default async ({url, metadataPrefix, set, logLevel, stateInterfaceOptions}) => {
   const oaiPmhClient = createOaiPmhClient({url, metadataPrefix, set, retrieveAll: false, filterDeleted: true});
   const logger = createLogger(logLevel);
-  const {readState, writeState, handleQueues} = createStateInterface(stateInterfaceOptions);
+  const {readState, writeState, close} = await createStateInterface(stateInterfaceOptions);
 
   logger.log('info', `Starting melinda-record-harvest-harvester`);
 
@@ -46,14 +45,14 @@ export default async ({url, metadataPrefix, set, logLevel, stateInterfaceOptions
 
   if (status === statuses.harvestError) {
     logger.log('error', `Cannot proceed. Last run resulted in an error: ${error}`);
-    return;
+    return close();
   }
-
-  await handleQueues();
 
   if (status === statuses.harvestPending) {
     logger.log('info', resumptionToken ? `Resuming harvest. Cursor of last response: ${resumptionToken.cursor}` : 'Starting harvest');
-    return harvest(resumptionToken);
+    await harvest(resumptionToken);
+    logger.log('info', 'All records havested');
+    return close();
   }
 
   if (status === statuses.harvestDone) {
@@ -65,10 +64,11 @@ export default async ({url, metadataPrefix, set, logLevel, stateInterfaceOptions
     }*/
 
     logger.info('Nothing to do. Exiting.');
-    return;
+    return close();
   }
 
   logger.info('Nothing to do. Exiting.');
+  return close();
 
   /*function isHarvestDue() {
     const now = moment();
@@ -81,12 +81,12 @@ export default async ({url, metadataPrefix, set, logLevel, stateInterfaceOptions
       const {records, newToken} = await fetchRecords();
 
       if (newToken) {
-        const totalMessageCount = await writeState({
+        await writeState({
           status: statuses.harvestPending,
           resumptionToken: {token: newToken.token, cursor: newToken.cursor}
         }, records);
 
-        logger.log('info', records.length > 0 ? `Sent ${records.length} records to queue. Total length now ${totalMessageCount}. Harvesting more records` : 'Harvesting more records');
+        logger.log('info', `Sent ${records.length} records to queue. Harvesting more records`);
         return harvest(newToken);
       }
 
@@ -107,17 +107,18 @@ export default async ({url, metadataPrefix, set, logLevel, stateInterfaceOptions
 
         oaiPmhClient.listRecords({resumptionToken})
           .on('error', reject)
-          .on('record', ({identifier, metadata}) => {
+          .on('record', ({header: {identifier: oaiIdentifier}, metadata}) => {
             promises.push(transform()); // eslint-disable-line functional/immutable-data
 
             async function transform() {
               try {
                 // Disable validation because we just to want harvest everything and not comment on validity
                 const record = await MARCXML.from(metadata, {subfieldValues: false, fields: false, subfields: false});
-                return record;
+                const [identifier] = oaiIdentifier.split('/').slice(-1);
+                return {identifier: Number(identifier), record: record.toObject()};
               } catch (err) {
                 // Doesn't work
-                logger.log('warn', `Skipping record ${identifier} because parsing failed: ${JSON.stringify(err)}`);
+                logger.log('warn', `Skipping record ${oaiIdentifier} because parsing failed: ${JSON.stringify(err)}`);
               }
             }
           })

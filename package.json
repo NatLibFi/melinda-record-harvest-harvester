@@ -35,8 +35,8 @@
 	"dependencies": {
 		"@babel/runtime": "^7.11.2",
 		"@natlibfi/marc-record-serializers": "^6.1.0",
-		"@natlibfi/melinda-backend-commons": "^1.0.2",
-		"@natlibfi/melinda-record-harvest-commons": "^1.0.0-alpha.1",
+		"@natlibfi/melinda-backend-commons": "^1.0.4",
+		"@natlibfi/melinda-record-harvest-commons": "^1.0.0-alpha.6",
 		"@natlibfi/oai-pmh-client": "^2.0.4",
 		"human-interval": "^1.0.0",
 		"moment": "^2.27.0",
@@ -56,7 +56,7 @@
 		"chai": "^4.2.0",
 		"chai-as-promised": "^7.1.1",
 		"cross-env": "^7.0.2",
-		"eslint": "^7.6.0",
+		"eslint": "^7.7.0",
 		"mocha": "^7.1.2",
 		"nodemon": "^2.0.4",
 		"nyc": "^15.1.0"
