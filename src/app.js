@@ -116,8 +116,7 @@ export default async ({url, metadataPrefix, set, logLevel, stateInterfaceOptions
                 const record = await MARCXML.from(metadata, {subfieldValues: false, fields: false, subfields: false});
                 const [identifier] = oaiIdentifier.split('/').slice(-1);
                 return {identifier: Number(identifier), record: record.toObject()};
-              } catch (err) {
-                // Doesn't work
+              } catch (err) {                
                 logger.log('warn', `Skipping record ${oaiIdentifier} because parsing failed: ${JSON.stringify(err)}`);
               }
             }

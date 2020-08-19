@@ -14,6 +14,6 @@ docker run --rm -d --name "${1}-db" -p 3306:3306 \
   -e MYSQL_USER=foo \
   -e MYSQL_PASSWORD=bar \
   -e MYSQL_RANDOM_ROOT_PASSWORD=1 \
-  mariadb
+  mariadb:10
 
 docker run --rm --name "${1}-db-gui" -p 8080:80 --link "${1}-db":db -d phpmyadmin/phpmyadmin
