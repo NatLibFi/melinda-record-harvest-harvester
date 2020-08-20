@@ -1,14 +1,21 @@
 #!/bin/sh
-docker kill dump-db
-docker kill dump-db-gui
+if test -z "$1";then
+  echo 'Usage: start-deps.sh <NAME>'
+  exit 1
+fi
 
-docker volume create dump-db
+NAME="${1}-db"
 
-docker run --rm -v dump-db:/var/lib/mysql -d --name dump-db -p 3306:3306 \
+docker kill $NAME
+docker kill $NAME-gui
+
+docker volume create $NAME
+
+docker run --rm -v $NAME:/var/lib/mysql -d --name $NAME -p 3306:3306 \
   -e MYSQL_DATABASE=foo \
   -e MYSQL_USER=foo \
   -e MYSQL_PASSWORD=bar \
   -e MYSQL_RANDOM_ROOT_PASSWORD=1 \
   mariadb:10
 
-docker run --rm --name dump-db-gui -p 8080:80 --link dump-db:db -d phpmyadmin/phpmyadmin
+docker run --rm --name $NAME-gui -p 8080:80 --link $NAME:db -d phpmyadmin/phpmyadmin
