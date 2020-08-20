@@ -36,7 +36,7 @@
 		"@babel/runtime": "^7.11.2",
 		"@natlibfi/marc-record-serializers": "^7.0.0",
 		"@natlibfi/melinda-backend-commons": "^1.0.4",
-		"@natlibfi/melinda-record-harvest-commons": "^1.0.0-alpha.7",
+		"@natlibfi/melinda-record-harvest-commons": "^1.0.0-alpha.8",
 		"@natlibfi/oai-pmh-client": "^2.0.4",
 		"human-interval": "^1.0.0",
 		"moment": "^2.27.0",

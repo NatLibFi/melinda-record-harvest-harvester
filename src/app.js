@@ -49,9 +49,9 @@ export default async ({url, metadataPrefix, set, logLevel, stateInterfaceOptions
   }
 
   if (status === statuses.harvestPending) {
-    logger.log('info', resumptionToken ? `Resuming harvest. Cursor of last response: ${resumptionToken.cursor}` : 'Starting harvest');
+    logger.log('info', resumptionToken ? `Resuming harvest. Token: ${resumptionToken.token}. Cursor of last response: ${resumptionToken.cursor}` : 'Starting harvest');
     await harvest(resumptionToken);
-    logger.log('info', 'All records havested');
+    logger.log('info', 'All records harvested');
     return close();
   }
 
@@ -116,7 +116,7 @@ export default async ({url, metadataPrefix, set, logLevel, stateInterfaceOptions
                 const record = await MARCXML.from(metadata, {subfieldValues: false, fields: false, subfields: false});
                 const [identifier] = oaiIdentifier.split('/').slice(-1);
                 return {identifier: Number(identifier), record: record.toObject()};
-              } catch (err) {                
+              } catch (err) {
                 logger.log('warn', `Skipping record ${oaiIdentifier} because parsing failed: ${JSON.stringify(err)}`);
               }
             }
