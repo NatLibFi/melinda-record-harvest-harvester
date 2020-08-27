@@ -30,7 +30,7 @@ import humanInterval from 'human-interval';
 import {readEnvironmentVariable} from '@natlibfi/melinda-backend-commons';
 
 export const url = readEnvironmentVariable('URL');
-export const harvestPeriod = readEnvironmentVariable('HARVEST_PERIOD', {format: humanInterval});
+export const harvestPeriod = readEnvironmentVariable('HARVEST_PERIOD', {defaultValue: 'never', format: humanInterval});
 
 export const metadataPrefix = readEnvironmentVariable('METADATA_PREFIX', {defaultValue: 'marc21'});
 export const set = readEnvironmentVariable('SET', {defaultValue: '', format: v => v || undefined});

@@ -27,21 +27,20 @@
 *
 */
 
+import moment from 'moment';
 import {createLogger} from '@natlibfi/melinda-backend-commons';
 import createStateInterface, {statuses} from '@natlibfi/melinda-record-harvest-commons';
 import {MARCXML} from '@natlibfi/marc-record-serializers';
 import createOaiPmhClient, {OaiPmhError} from '@natlibfi/oai-pmh-client';
 
-//export default async ({harvestPeriod, url, metadataPrefix, set, logLevel, stateInterfaceOptions}) => {
-export default async ({url, metadataPrefix, set, logLevel, stateInterfaceOptions}) => {
+export default async ({harvestPeriod, url, metadataPrefix, set, logLevel, stateInterfaceOptions}) => {
   const oaiPmhClient = createOaiPmhClient({url, metadataPrefix, set, retrieveAll: false, filterDeleted: true});
   const logger = createLogger(logLevel);
   const {readState, writeState, close} = await createStateInterface(stateInterfaceOptions);
 
   logger.log('info', `Starting melinda-record-harvest-harvester`);
 
-  //  const {status, resumptionToken, timestamp} = await readState();
-  const {status, error, resumptionToken} = await readState();
+  const {status, resumptionToken, timestamp, error} = await readState();
 
   if (status === statuses.harvestError) {
     logger.log('error', `Cannot proceed. Last run resulted in an error: ${error}`);
@@ -55,26 +54,24 @@ export default async ({url, metadataPrefix, set, logLevel, stateInterfaceOptions
     return close();
   }
 
-  if (status === statuses.harvestDone) {
-
-    /*if (isHarvestDue()) {
-      logger.log('info', 'Harvest is due');
-      await writeState({status: statuses.pending});
-      return harvest();
-    }*/
-
-    logger.info('Nothing to do. Exiting.');
-    return close();
+  if (status === statuses.postProcessingDone && isHarvestDue()) {
+    logger.log('info', 'Harvest is due');
+    await writeState({status: statuses.pending});
+    return harvest();
   }
 
   logger.info('Nothing to do. Exiting.');
   return close();
 
-  /*function isHarvestDue() {
+  function isHarvestDue() {
+    if (harvestPeriod === 'never') {
+      return false;
+    }
+
     const now = moment();
     const dumpAge = now.diff(timestamp);
     return dumpAge > harvestPeriod;
-  }*/
+  }
 
   async function harvest(resumptionToken) {
     try {
@@ -86,7 +83,7 @@ export default async ({url, metadataPrefix, set, logLevel, stateInterfaceOptions
           resumptionToken: {token: newToken.token, cursor: newToken.cursor}
         }, records);
 
-        logger.log('info', `Sent ${records.length} records to queue. Harvesting more records`);
+        logger.log('info', `Sent ${records.length} records to queue. Harvesting more records (Cursor of last response: ${newToken.cursor})`);
         return harvest(newToken);
       }
 
