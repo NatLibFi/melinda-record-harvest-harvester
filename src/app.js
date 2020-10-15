@@ -43,7 +43,7 @@ export default async ({harvestPeriod, url, metadataPrefix, set, logLevel, stateI
   const {status, resumptionToken, timestamp, error} = await readState();
 
   if (status === statuses.harvestError) {
-    logger.log('error', `Cannot proceed. Last run resulted in an error: ${error}`);
+    logger.log('error', `Cannot proceed. Last run resulted in an error: ${error}${resumptionToken ? `. Token: ${resumptionToken.token}` : ''}`);
     return close();
   }
 
